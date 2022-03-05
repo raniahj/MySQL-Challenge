@@ -1,0 +1,26 @@
+{
+  "name": "mysql-challenge",
+  "version": "1.0.0",
+  "description": "a command line app to manage a company's employee database. Tools: Node.js, Inquirer, and MySQL.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raniahj/MySQL-Challenge.git"
+  },
+  "author": "Raniah Jeanlys",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/raniahj/MySQL-Challenge/issues"
+  },
+  "homepage": "https://github.com/raniahj/MySQL-Challenge#readme",
+  "dependencies": {
+    "console.table": "^0.10.0",
+    "dotenv": "^16.0.0",
+    "inquirer": "^8.2.0",
+    "mysql2": "^2.3.3"
+  }
+}
