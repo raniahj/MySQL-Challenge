@@ -19,7 +19,7 @@ db.connect(function (err) {
   });
 
  // Function for Initial Prompt
- function initialPrompt() {
+ function initialPrompt (){
     inquirer.prompt ([
       {
         type: 'list',
@@ -38,22 +38,22 @@ db.connect(function (err) {
                   'Delete a role',
                   'Delete an employee',
                   'View department budgets',
-                  'No Action']
+                  'End']
       }
     ])
       .then((answers) => {
         const { choices } = answers; 
   
         if (choices === "View all departments") {
-          showDepartments();
+          viewDepartments();
         }
   
         if (choices === "View all roles") {
-          showRoles();
+          viewRoles();
         }
   
         if (choices === "View all employees") {
-          showEmployees();
+          viewEmployees();
         }
   
         if (choices === "Add a department") {
@@ -96,63 +96,61 @@ db.connect(function (err) {
           viewBudget();
         }
   
-        if (choices === "No Action") {
+        if (choices === "End") {
           connection.end()
         };
+    }).then(function (res) {
+      mainMenu(res.choices)
+  });
+  };
+  
+
+// function to show all departments 
+viewDepartments = () => {
+    console.log('Showing all departments');
+    const sql = `SELECT department.id AS id, department.name AS department FROM department`; 
+  
+    db.query("SELECT * FROM department", function (error, res) {
+      console.table(res);
+      initialPrompt();
     });
   };
-  // Function for Main Menu
-function mainMenu(options) {
-    switch (options) {
-        case "viewAllDepartments":
-            viewAllDepartments();
-            break;
-        case "viewAllRoles":
-            viewAllRoles();
-            break;
-        case "viewAllEmployees":
-            viewAllEmployees();
-            break;
-        case "addDepartment":
-            addDepartment();
-            break;
-        case "addRole":
-            addRole();
-            break;
-        case "addEmployee":
-            addEmployee();
-            break;
-        case "updateRole":
-            updateRole();
-            break;
-        case "end":
-            end();
-    };
-};
-
-// Function to View all Departments
-function viewAllDepartments() {
-    db.query("SELECT * FROM department", function (error, res) {
-        console.table(res);
-        endOrMain();
-    });
-};
-
-// Function to View all Roles
-function viewAllRoles() {
+  
+  // function to show all roles 
+  viewRoles = () => {
+    console.log('Showing all roles');
+  
+    const sql = `SELECT roles.id, roles.title, department.name AS department
+                 FROM roles
+                 INNER JOIN department ON roles.department_id = department.id`;
+    
     db.query("SELECT * FROM roles", function (error, res) {
-        console.table(res);
-        endOrMain();
-    });
-};
-
-// Function to View all Employees
-function viewAllEmployees() {
+        console.table(res); 
+      initialPrompt();
+    })
+  };
+  
+  // function to show all employees 
+  viewEmployees = () => {
+    console.log('Showing all employees...\n'); 
+    const sql = `SELECT employee.id, 
+                        employee.first_name, 
+                        employee.last_name, 
+                        roles.title, 
+                        department.name AS department,
+                        roles.salary, 
+                        CONCAT (manager.first_name, " ", manager.last_name) AS manager
+                 FROM employee
+                        LEFT JOIN roles ON employee.role_id = roles.id
+                        LEFT JOIN department ON roles.department_id = department.id
+                        LEFT JOIN employee manager ON employee.manager_id = manager.id`;
+  
     db.query("SELECT * FROM employee", function (error, res) {
         console.table(res);
-        endOrMain();
+      initialPrompt();
     });
-};
+  };
+  
 
 // Function to Add Department
 function addDepartment() {
@@ -173,43 +171,53 @@ function newDepartment(data) {
         function (error, res) {
             if (error) throw error;
         });
-    endOrMain();
 };
 
 // Function to Add Role
 function addRole() {
-    inquirer.prompt([{
-                type: "input",
-                message: "What is the name of the new role?",
-                name: "title"
-            },
-            {
-                type: "input",
-                message: "What is the salary of the new role?",
-                name: "salary"
-
-            },
-            {
-                type: "list",
-                message: "Which department is the new role in?",
-                name: "id",
-                choices: departments
+    viewDepartments();
+    viewRoles();
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: 'addRole',
+            message: "What role would you like to add?",
+            validate: (input) => {
+                if (input === '') {
+                    return "Please make sure you enter the role you are trying to add here."
+                }
+                return true;
             }
-        ])
-        .then(function (response) {
-            addNewRole(response);
+        },
+        {
+            type: 'input',
+            name: 'roleSalary',
+            message: "What is the salary for this role?",
+            validate: (input) => {
+                if (input === '') {
+                    return "Please make sure you enter the salary for the role you are trying to add here."
+                }
+                return true;
+            }
+        },
+        {
+            type: 'input',
+            name: 'addDepartmentID',
+            message: "What is the department ID for the role you want to add?",
+            validate: (input) => {
+                if (input === '') {
+                    return "Please make sure you enter the department ID for the role you are trying to add here."
+                }
+                return true;
+            }
+        }
+    ]).then(function(data) {
+        console.log('Add Role Data', data);
+        db.query(`INSERT INTO role (title, salary, department_id) values ("${data.addRole}", ${data.roleSalary}, ${data.addDepartmentID})`,  function (err, results) {
+            console.log("Successfully added new role.");
+            viewRoles();
         });
-};
-
-function addNewRole(data) {
-    db.query("INSERT INTO role SET ?", {
-        title: data.title,
-        salary: data.salary,
-        department_id: data.id
-    }, function (error, res) {
-        if (error) throw error;
-    });
-    endOrMain();
+    })
 };
 
 // Function to Add Employee
@@ -282,18 +290,9 @@ function updateEmployeesRole(data) {
     endOrMain();
 };
 
-// Function to End or back to Main
-function endOrMain() {
-    confirm("Do you want to continue?")
-        .then(function confirmed() {
-            initialPrompt();
-        }, function cancelled() {
-            end();
-        });
-};
 
 function end() {
-    console.log("Exiting Employee Manager");
+    console.log("Exiting Employee Database");
     db.end();
     process.exit();
 };
