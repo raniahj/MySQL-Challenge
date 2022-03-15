@@ -100,7 +100,7 @@ db.connect(function (err) {
           connection.end()
         };
     }).then(function (res) {
-      mainMenu(res.choices)
+      //mainMenu(res.choices)
   });
   };
   
